@@ -13,3 +13,10 @@
     position: absolute;
     white-space: nowrap;
 }
+
+.spinner {
+    position: absolute;
+    inset: 0;
+    z-index: 100;
+    cursor: wait;
+}

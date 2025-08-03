@@ -1,5 +1,5 @@
-import nx from "@nx/eslint-plugin"
-import baseConfig from "../../eslint.config.mjs"
+import nx from "@nx/eslint-plugin";
+import baseConfig from "../../eslint.config.mjs";
 
 const modifyConfig = (config) => {
     // delete rules defined globally
@@ -8,12 +8,12 @@ const modifyConfig = (config) => {
     // delete import plugin
     for (const singleConfig of config) {
         if (singleConfig?.plugins?.["import"]) {
-            console.log("eslint.config.js: Stripped import plugin")
-            delete singleConfig.plugins["import"]
+            console.log("eslint.config.js: Stripped import plugin");
+            delete singleConfig.plugins["import"];
         }
     }
-    return config
-}
+    return config;
+};
 
 export default [
     ...baseConfig,
@@ -25,4 +25,4 @@ export default [
             "no-redeclare": ["off"],
         },
     },
-]
+];

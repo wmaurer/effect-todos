@@ -1,5 +1,5 @@
-import { Tuple } from "effect"
+import { Tuple } from "effect";
 
-import { TodoApiLive } from "./TodoApi"
+import { TodoApiLive } from "./TodoApi";
 
-export const apiGroups = Tuple.make(TodoApiLive)
+export const apiGroups = Tuple.make(TodoApiLive);

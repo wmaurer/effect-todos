@@ -1,4 +1,4 @@
-import baseConfig from "../../eslint.config.mjs"
+import baseConfig from "../../eslint.config.mjs";
 
 export default [
     ...baseConfig,
@@ -19,4 +19,4 @@ export default [
             parser: await import("jsonc-eslint-parser"),
         },
     },
-]
+];
