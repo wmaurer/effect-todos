@@ -1,6 +1,8 @@
+import * as Reactivity from "@effect/experimental/Reactivity"
 import { FetchHttpClient, HttpApiClient, KeyValueStore } from "@effect/platform"
 import { HttpApiDecodeError } from "@effect/platform/HttpApiError"
 import { HttpClientError } from "@effect/platform/HttpClientError"
+import { BrowserKeyValueStore } from "@effect/platform-browser"
 import { Result, Rx } from "@effect-rx/rx-react"
 import { Array, Effect, HashMap, Layer, Match, Option, Schema, Stream, SubscriptionRef, Tuple, pipe } from "effect"
 import { ParseError } from "effect/ParseResult"
@@ -17,15 +19,25 @@ export class InternalApplicationError extends Schema.TaggedError<InternalApplica
 
 class TodoService extends Effect.Service<TodoService>()("TodosService", {
     accessors: true,
+    dependencies: [BrowserKeyValueStore.layerLocalStorage, Reactivity.layer],
     effect: Effect.gen(function* () {
+        const reactivity = yield* Reactivity.Reactivity
         const todosStore = (yield* KeyValueStore.KeyValueStore).forSchema(Schema.Array(Todo))
         const todosFilterStore = (yield* KeyValueStore.KeyValueStore).forSchema(TodosFilter)
 
-        const map = (yield* todosStore.get("todos")).pipe(
+        yield* todosStore.set("todos", [
+            new Todo({ id: TodoId.make(1), title: "Some Todo (client)", completed: false }),
+            new Todo({ id: TodoId.make(2), title: "Another Todo (client)", completed: true }),
+        ])
+
+        let map = (yield* todosStore.get("todos")).pipe(
             Option.map((products) => HashMap.make(...products.map((p) => Tuple.make(p.id, p)))),
             Option.getOrElse(() => HashMap.empty<TodoId, Todo>()),
         )
         const filter = (yield* todosFilterStore.get("todosFilter")).pipe(Option.getOrElse(() => TodosFilter.enums.all))
+
+        const todos = Effect.sync(() => Array.fromIterable(HashMap.values(map)))
+        const todosReactive = reactivity.stream(["todos"], todos)
 
         const filteredTodos = Effect.sync(() =>
             Match.value(filter).pipe(
@@ -47,11 +59,11 @@ class TodoService extends Effect.Service<TodoService>()("TodosService", {
             )
 
         const toggleTodo = Effect.fn("TodosService.toggleTodo")(function* (id: TodoId) {
-            const todo = yield* getTodo(id)
-            yield* todosStore.set(
-                "todos",
-                Array.fromIterable(HashMap.values(HashMap.set(map, id, { ...todo, completed: !todo.completed }))),
-            )
+            console.log("toggling todo", id)
+            const todo = yield* getTodo(id).pipe(Effect.orDie)
+
+            map = HashMap.set(map, id, Todo.make({ ...todo, completed: !todo.completed }))
+            yield* todosStore.set("todos", Array.fromIterable(HashMap.values(map))).pipe(Effect.orDie)
         })
 
         // const fetchTodos = Effect.fn("TodosService.fetchTodos")(function* () {
@@ -189,26 +201,49 @@ class TodoService extends Effect.Service<TodoService>()("TodosService", {
         // yield* fetchTodos()
 
         return {
-            todos: filteredTodos,
+            todos: todosReactive,
             incompleteTodosCount,
-            // clearCompletedTodos,
+            clearCompletedTodos: Effect.fnUntraced(function* () {
+                return yield* Effect.void
+            }),
             toggleTodo,
-            // setTodosFilter,
-            // createTodo,
-            // toggleAllTodos,
-            // removeTodo,
-            // updateTodoTitle,
+            setTodosFilter: Effect.fnUntraced(function* (filter: TodosFilter) {
+                return yield* Effect.void
+            }),
+            createTodo: Effect.fnUntraced(function* () {
+                return yield* Effect.void
+            }),
+            toggleAllTodos: Effect.fnUntraced(function* (completed: boolean) {
+                return yield* Effect.void
+            }),
+            removeTodo: Effect.fnUntraced(function* () {
+                return yield* Effect.void
+            }),
+            updateTodoTitle: Effect.fnUntraced(function* () {
+                return yield* Effect.void
+            }),
         } as const
     }),
-}) {}
+}) {
+    static runtime = Rx.runtime(this.Default)
+}
 
-const runtimeRx = Rx.runtime(TodoService.Default.pipe(Layer.provide(FetchHttpClient.layer)))
+const runtimeRx = Rx.runtime(
+    TodoService.Default.pipe(
+        Layer.provide(FetchHttpClient.layer),
+        Layer.provide(BrowserKeyValueStore.layerLocalStorage),
+    ),
+)
 
-export const todosRx = runtimeRx.rx(TodoService.todos.pipe(Stream.unwrap)).pipe(Rx.keepAlive)
+// export const todosRx = runtimeRx.rx(TodoService.todos.pipe(Stream.unwrap)).pipe(Rx.keepAlive)
 
-export const incompleteTodosCountRx = runtimeRx
-    .rx(TodoService.incompleteTodosCount.pipe(Stream.unwrap))
-    .pipe(Rx.map(Result.getOrElse(() => 0)))
+// eslint-disable-next-line react-hooks/rules-of-hooks
+export const todosRx = TodoService.runtime.rx(TodoService.use((_) => _.todos).pipe(Stream.unwrap))
+
+// export const incompleteTodosCountRx = runtimeRx
+//     .rx(TodoService.incompleteTodosCount.pipe(Stream.unwrap))
+//     .pipe(Rx.map(Result.getOrElse(() => 0)))
+export const incompleteTodosCountRx = runtimeRx.rx(() => Effect.succeed(0))
 
 export const callTodosServiceFn = runtimeRx
     .fn(

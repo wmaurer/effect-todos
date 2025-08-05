@@ -1,4 +1,4 @@
-import { useRxSet, useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
+import { Result, useRxSet, useRxSetPromise, useRxSuspense, useRxSuspenseSuccess } from "@effect-rx/rx-react"
 import { SearchSchemaInput, createFileRoute } from "@tanstack/react-router"
 import { Cause, Schema } from "effect"
 import { useEffect } from "react"
@@ -27,23 +27,23 @@ export const Route = createFileRoute("/")({
 function Index() {
     const { filter } = Route.useSearch()
     const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
-    const result = useRxSuspenseSuccess(todosRx)
+    const result = useRxSuspense(todosRx)
 
     useEffect(() => {
         callTodoServiceFn((_) => _.setTodosFilter(filter))
     }, [callTodoServiceFn, filter])
 
-    if (AsyncData.isFailure(result.value)) {
-        return <div>{Cause.pretty(result.value.cause)}</div>
+    if (Result.isFailure(result)) {
+        return <div>{Cause.pretty(result.cause)}</div>
     }
 
     return (
         <>
             <section className="todoapp">
-                <Header />
+                {/* <Header /> */}
                 <Main />
-                <Footer />
-                {AsyncData.isOptimistic(result.value) && (
+                {/* <Footer /> */}
+                {/* {AsyncData.isOptimistic(result.value) && (
                     <div
                         style={{
                             position: "absolute",
@@ -52,7 +52,7 @@ function Index() {
                             cursor: "wait",
                             zIndex: 100,
                         }}></div>
-                )}
+                )} */}
             </section>
             <footer className="info">
                 <p>Double-click to edit a todo</p>
