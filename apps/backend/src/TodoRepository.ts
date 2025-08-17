@@ -13,8 +13,8 @@ export class TodoRepository extends Effect.Service<TodoRepository>()("backend/To
             ),
         )
 
-        const getAll = Ref.get(todos)
-        // const getAll = Ref.get(todos).pipe(Effect.map((todos) => Array.from(HashMap.values(todos))))
+        // const getAll = Ref.get(todos)
+        const getAll = Ref.get(todos).pipe(Effect.map((todos) => Array.from(HashMap.values(todos))))
 
         function getById(id: TodoId): Effect.Effect<Todo, TodoNotFound> {
             return Ref.get(todos).pipe(
@@ -33,6 +33,7 @@ export class TodoRepository extends Effect.Service<TodoRepository>()("backend/To
 
         function updateCompleted(id: TodoId, completed: boolean): Effect.Effect<Todo, TodoNotFound> {
             return getById(id).pipe(
+                Effect.tap(() => Effect.sleep(2000)),
                 Effect.map((todo) => new Todo({ ...todo, completed })),
                 Effect.tap((todo) => Ref.update(todos, HashMap.set(todo.id, todo))),
             )

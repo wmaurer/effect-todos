@@ -1,10 +1,10 @@
 import { HttpApi, HttpApiEndpoint, HttpApiGroup } from "@effect/platform"
 import { Schema } from "effect"
 
-import { Todo, TodoId, TodoIdFromString, TodoNotFound } from "./Todo"
+import { Todo, TodoIdFromString, TodoNotFound } from "./Todo"
 
 export class TodoApiGroup extends HttpApiGroup.make("todos")
-    .add(HttpApiEndpoint.get("getAllTodos", "/todos").addSuccess(Schema.HashMap({ key: TodoId, value: Todo })))
+    .add(HttpApiEndpoint.get("getAllTodos", "/todos").addSuccess(Schema.Array(Todo)))
     .add(
         HttpApiEndpoint.get("getTodoById", "/todos/:id")
             .addSuccess(Todo)

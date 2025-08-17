@@ -3,7 +3,7 @@
     "version": "0.0.0",
     "license": "MIT",
     "scripts": {
-        "upgrade-effect": "pnpm add --save-exact effect@latest @effect/experimental@latest @effect/platform@latest @effect/cluster@latest @effect/rpc@latest @effect/workflow@latest @effect/platform-browser@latest @effect/platform-node@latest @effect/cli@latest @effect/printer@latest @effect/printer-ansi@latest @effect/typeclass@latest @effect-rx/rx-react@latest @effect/sql@latest @effect/sql-sqlite-node@latest && pnpm add -D @effect/language-service"
+        "upgrade-effect": "pnpm add --save-exact effect@latest @effect/experimental@latest @effect/platform@latest @effect/cluster@latest @effect/rpc@latest @effect/workflow@latest @effect/platform-browser@latest @effect/platform-node@latest @effect/cli@latest @effect/printer@latest @effect/printer-ansi@latest @effect/typeclass@latest @effect-atom/atom-react@latest @effect/sql@latest @effect/sql-sqlite-node@latest && pnpm add -D @effect/language-service"
     },
     "private": true,
     "devDependencies": {
@@ -53,26 +53,26 @@
         "vitest": "^3.0.0"
     },
     "dependencies": {
-        "@effect-rx/rx-react": "0.38.0",
-        "@effect/cli": "0.66.9",
-        "@effect/cluster": "0.41.13",
-        "@effect/experimental": "0.51.10",
-        "@effect/platform": "0.87.9",
-        "@effect/platform-browser": "0.67.9",
-        "@effect/platform-node": "0.89.1",
-        "@effect/printer": "0.44.12",
-        "@effect/printer-ansi": "0.44.12",
-        "@effect/rpc": "0.64.10",
-        "@effect/sql": "0.40.10",
-        "@effect/sql-sqlite-node": "0.41.10",
-        "@effect/typeclass": "0.35.12",
-        "@effect/workflow": "0.4.10",
+        "@effect-atom/atom-react": "0.1.12",
+        "@effect/cli": "0.69.0",
+        "@effect/cluster": "0.47.0",
+        "@effect/experimental": "0.54.5",
+        "@effect/platform": "0.90.2",
+        "@effect/platform-browser": "0.70.0",
+        "@effect/platform-node": "0.95.0",
+        "@effect/printer": "0.45.0",
+        "@effect/printer-ansi": "0.45.0",
+        "@effect/rpc": "0.68.4",
+        "@effect/sql": "0.44.1",
+        "@effect/sql-sqlite-node": "0.45.0",
+        "@effect/typeclass": "0.36.0",
+        "@effect/workflow": "0.8.3",
         "@paralleldrive/cuid2": "^2.2.2",
         "@tanstack/react-router": "^1.125.4",
         "@tanstack/react-router-devtools": "^1.125.4",
         "@typed/async-data": "^0.13.1",
         "clsx": "^2.1.1",
-        "effect": "3.16.12",
+        "effect": "3.17.7",
         "react": "19.0.0",
         "react-dom": "19.0.0"
     }

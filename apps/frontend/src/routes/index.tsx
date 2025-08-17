@@ -1,13 +1,11 @@
-import { Result, useRxSet, useRxSetPromise, useRxSuspense, useRxSuspenseSuccess } from "@effect-rx/rx-react"
+import { useAtomSet } from "@effect-atom/atom-react"
 import { SearchSchemaInput, createFileRoute } from "@tanstack/react-router"
-import { Cause, Schema } from "effect"
+import { Schema } from "effect"
 import { useEffect } from "react"
 
-import * as AsyncData from "../AsyncData"
 import { Footer } from "../components/footer"
-import { Header } from "../components/header"
 import { Main } from "../components/main"
-import { callTodosServiceFn, setTodosFilterRx, todosRx } from "../rx"
+import { todosFilterAtom } from "../rx"
 import { TodosFilter } from "../Todo"
 
 const schemaValidator =
@@ -26,33 +24,24 @@ export const Route = createFileRoute("/")({
 
 function Index() {
     const { filter } = Route.useSearch()
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
-    const result = useRxSuspense(todosRx)
+
+    // const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
+    // const result = useRxSuspense(todosRx)
+    const setFilter = useAtomSet(todosFilterAtom)
 
     useEffect(() => {
-        callTodoServiceFn((_) => _.setTodosFilter(filter))
-    }, [callTodoServiceFn, filter])
+        setFilter(filter)
+    }, [setFilter, filter])
 
-    if (Result.isFailure(result)) {
-        return <div>{Cause.pretty(result.cause)}</div>
-    }
+    // if (Result.isFailure(result)) {
+    //     return <div>{Cause.pretty(result.cause)}</div>
+    // }
 
     return (
         <>
             <section className="todoapp">
-                {/* <Header /> */}
                 <Main />
-                {/* <Footer /> */}
-                {/* {AsyncData.isOptimistic(result.value) && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            opacity: 0.05,
-                            cursor: "wait",
-                            zIndex: 100,
-                        }}></div>
-                )} */}
+                <Footer />
             </section>
             <footer className="info">
                 <p>Double-click to edit a todo</p>
