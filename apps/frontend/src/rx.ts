@@ -1,6 +1,6 @@
-import { FetchHttpClient } from "@effect/platform"
+import { FetchHttpClient, HttpApiClient } from "@effect/platform"
 import { Atom, AtomHttpApi, Result } from "@effect-atom/atom-react"
-import { Array, Effect, Match, Schema } from "effect"
+import { Array, Effect, HashMap, Match, Schema, Stream, SubscriptionRef } from "effect"
 
 import { TodosFilter } from "./Todo"
 
@@ -10,6 +10,28 @@ export class InternalApplicationError extends Schema.TaggedError<InternalApplica
     "@/Frontend/InternalApplicationError",
     { message: Schema.String },
 ) {}
+
+export class TodoService extends Effect.Service<TodoService>()("TodosService", {
+    accessors: true,
+    effect: Effect.gen(function* () {
+        yield* Effect.succeed(1)
+
+        const todos = HashMap.empty<TodoId, Todo>()
+        const todos2 = Result.initial<HashMap.HashMap<TodoId, Todo>>()
+
+        return {
+            todos: Effect.sync(() => todos),
+            todos2: Effect.sync(() => todos2),
+        } as const
+    }),
+}) {}
+const runtimeAtom = Atom.runtime(TodoService.Default)
+export const todosAtomReadonly = runtimeAtom.atom(TodoService.todos).pipe(Atom.map(Result.getOrElse(Array.empty<Todo>)))
+export const todosAtom = Atom.optimistic(todosAtomReadonly)
+export const todosAtom2Readonly = runtimeAtom
+    .atom(TodoService.todos2)
+    .pipe(Atom.map(Result.getOrElse(Array.empty<Todo>)))
+export const todosAtom2 = Atom.optimistic(todosAtom2Readonly)
 
 export class ApiClient extends AtomHttpApi.Tag<ApiClient>()("ApiClient", {
     api: Api,
