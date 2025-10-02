@@ -1,16 +1,20 @@
-import { useRxSetPromise } from "@effect-rx/rx-react"
-import { clsx } from "clsx"
-import { FC, useState } from "react"
+import { useAtomSet } from "@effect-atom/atom-react";
+import { clsx } from "clsx";
+import { FC, useState } from "react";
 
-import { callTodosServiceFn } from "../rx"
+import { removeTodoAtom, toggleTodoAtom, updateTodoTitleAtom } from "../atom";
 
-import { Input } from "./input"
+import { Input } from "./input";
 
-import { Todo } from "@/domain"
+// todo: eslint import rule
+import { Todo, TodoId } from "@/domain";
 
 export const Item: FC<{ todo: Todo }> = ({ todo }) => {
-    const [isWritable, setIsWritable] = useState(false)
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
+    const [isWritable, setIsWritable] = useState(false);
+
+    const toggleTodo = useAtomSet(toggleTodoAtom, { mode: "promise" });
+    const removeTodo = useAtomSet(removeTodoAtom);
+    const updateTodoTitle = useAtomSet(updateTodoTitleAtom);
 
     return (
         <li className={clsx({ completed: todo.completed })}>
@@ -18,8 +22,8 @@ export const Item: FC<{ todo: Todo }> = ({ todo }) => {
                 {isWritable ? (
                     <Input
                         onSubmit={(title) => {
-                            callTodoServiceFn((_) => _.updateTodoTitle(todo.id, title))
-                            setIsWritable(false)
+                            updateTodoTitle({ id: todo.id, title });
+                            setIsWritable(false);
                         }}
                         label="Edit Todo Input"
                         defaultValue={todo.title}
@@ -32,7 +36,7 @@ export const Item: FC<{ todo: Todo }> = ({ todo }) => {
                             type="checkbox"
                             data-testid="todo-item-toggle"
                             checked={todo.completed}
-                            onChange={() => callTodoServiceFn((_) => _.toggleTodo(todo.id))}
+                            onChange={() => toggleTodo(TodoId.make(100))}
                         />
                         <label data-testid="todo-item-label" onDoubleClick={() => setIsWritable(true)}>
                             {todo.title}
@@ -40,11 +44,11 @@ export const Item: FC<{ todo: Todo }> = ({ todo }) => {
                         <button
                             className="destroy"
                             data-testid="todo-item-button"
-                            onClick={() => callTodoServiceFn((_) => _.removeTodo(todo.id))}
+                            onClick={() => removeTodo(todo.id)}
                         />
                     </>
                 )}
             </div>
         </li>
-    )
-}
+    );
+};

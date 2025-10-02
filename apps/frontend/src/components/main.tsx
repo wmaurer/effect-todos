@@ -1,35 +1,29 @@
-import { useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
-import { Array, Cause } from "effect"
+import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react";
+import { Array } from "effect";
 
-import * as AsyncData from "../AsyncData"
-import { callTodosServiceFn, todosRx } from "../rx"
+import { filteredTodosAtom, toggleAllTodosAtom } from "../atom";
 
-import { Item } from "./item"
+import { Item } from "./item";
 
 export const Main = () => {
-    const result = useRxSuspenseSuccess(todosRx)
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
+    const todos = useAtomSuspense(filteredTodosAtom);
+    const toggleAllTodos = useAtomSet(toggleAllTodosAtom);
 
-    return AsyncData.match(result.value, {
-        NoData: () => <div>Loading...</div>,
-        Loading: () => <div>Loading...</div>,
-        Success: (todos) => (
-            <section className="main">
-                <input
-                    className="toggle-all"
-                    type="checkbox"
-                    id="toggle-all"
-                    checked={Array.every(todos, (todo) => todo.completed)}
-                    onChange={(e) => callTodoServiceFn((_) => _.toggleAllTodos(e.target.checked))}
-                />
-                <label htmlFor="toggle-all">Mark all as complete</label>
-                <ul className="todo-list">
-                    {Array.map(todos, (todo) => (
-                        <Item todo={todo} key={todo.id} />
-                    ))}
-                </ul>
-            </section>
-        ),
-        Failure: (e) => <div>{Cause.pretty(e)}</div>,
-    })
-}
+    return (
+        <section className="main">
+            <input
+                className="toggle-all"
+                type="checkbox"
+                id="toggle-all"
+                checked={Array.every(todos.value, (todo) => todo.completed)}
+                onChange={(e) => toggleAllTodos(e.target.checked)}
+            />
+            <label htmlFor="toggle-all">Mark all as complete</label>
+            <ul className="todo-list">
+                {Array.map(todos.value, (todo) => (
+                    <Item todo={todo} key={todo.id} />
+                ))}
+            </ul>
+        </section>
+    );
+};

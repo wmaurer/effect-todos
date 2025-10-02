@@ -1,2 +1,2 @@
-export * from "./lib/Todo"
-export * from "./lib/TodoApi"
+export * from "./lib/Todo";
+export * from "./lib/TodoApi";

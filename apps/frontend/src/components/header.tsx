@@ -1,20 +1,20 @@
-import { useRxSetPromise } from "@effect-rx/rx-react"
+import { useAtomSet } from "@effect-atom/atom-react";
 
-import { callTodosServiceFn } from "../rx"
+import { createTodoAtom } from "../atom";
 
-import { Input } from "./input"
+import { Input } from "./input";
 
 export const Header = () => {
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
+    const createTodo = useAtomSet(createTodoAtom, { mode: "promise" });
 
     return (
         <header className="header">
             <h1>todos</h1>
             <Input
-                onSubmit={(title) => callTodoServiceFn((_) => _.createTodo(title))}
+                onSubmit={(title) => createTodo(title)}
                 label="New Todo Input"
                 placeholder="What needs to be done?"
             />
         </header>
-    )
-}
+    );
+};

@@ -1,19 +1,19 @@
-import { useRxSet, useRxSetPromise, useRxSuspenseSuccess } from "@effect-rx/rx-react"
-import { SearchSchemaInput, createFileRoute } from "@tanstack/react-router"
-import { Cause, Schema } from "effect"
-import { useEffect } from "react"
+import { useAtomSet, useAtomValue } from "@effect-atom/atom-react";
+import { SearchSchemaInput, createFileRoute } from "@tanstack/react-router";
+import { Data, Schema } from "effect";
+import { Suspense, useEffect } from "react";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 
-import * as AsyncData from "../AsyncData"
-import { Footer } from "../components/footer"
-import { Header } from "../components/header"
-import { Main } from "../components/main"
-import { callTodosServiceFn, setTodosFilterRx, todosRx } from "../rx"
-import { TodosFilter } from "../Todo"
+import { todosFilterAtom, todosOperationPendingAtom } from "../atom";
+import { Footer } from "../components/footer";
+import { Header } from "../components/header";
+import { Main } from "../components/main";
+import { TodosFilter } from "../Todo";
 
 const schemaValidator =
     <A, I>(schema: Schema.Schema<A, I>) =>
     (input: Schema.Schema.Encoded<typeof schema> & SearchSchemaInput) =>
-        Schema.decodeUnknownSync(schema)(input)
+        Schema.decodeUnknownSync(schema)(input);
 
 class SearchParams extends Schema.Class<SearchParams>("@/RootSearchParams")({
     filter: Schema.optionalWith(TodosFilter, { default: () => "all" }),
@@ -22,50 +22,60 @@ class SearchParams extends Schema.Class<SearchParams>("@/RootSearchParams")({
 export const Route = createFileRoute("/")({
     validateSearch: schemaValidator(SearchParams),
     component: Index,
-})
+});
+
+const fallbackRender = ({ error }: FallbackProps) => {
+    console.log(error instanceof Data.Error);
+    return (
+        <div role="alert">
+            <p style={{ color: "red" }}>Something went wrong</p>
+        </div>
+    );
+};
+const onError = (error: Error) => {
+    if (error instanceof Data.Error) {
+        console.log("Data.Error", JSON.stringify(error, null, 2));
+        console.log("Data.Error.stack:", error.stack);
+    } else {
+        console.error("Unknown error:", error);
+    }
+};
 
 function Index() {
-    const { filter } = Route.useSearch()
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
-    const result = useRxSuspenseSuccess(todosRx)
+    const { filter } = Route.useSearch();
+
+    const setFilter = useAtomSet(todosFilterAtom);
+    const operationPending = useAtomValue(todosOperationPendingAtom);
 
     useEffect(() => {
-        callTodoServiceFn((_) => _.setTodosFilter(filter))
-    }, [callTodoServiceFn, filter])
-
-    if (AsyncData.isFailure(result.value)) {
-        return <div>{Cause.pretty(result.value.cause)}</div>
-    }
+        setFilter(filter);
+    }, [setFilter, filter]);
 
     return (
-        <>
-            <section className="todoapp">
-                <Header />
-                <Main />
-                <Footer />
-                {AsyncData.isOptimistic(result.value) && (
-                    <div
-                        style={{
-                            position: "absolute",
-                            inset: 0,
-                            opacity: 0.05,
-                            cursor: "wait",
-                            zIndex: 100,
-                        }}></div>
-                )}
-            </section>
-            <footer className="info">
-                <p>Double-click to edit a todo</p>
-                <p>
-                    Template by <a href="http://sindresorhus.com">Sindre Sorhus</a>
-                </p>
-                <p>
-                    Created by
-                    <a target="_blank" href="https://waynemaurer.net" rel="noreferrer">
-                        Wayne Maurer
-                    </a>
-                </p>
-            </footer>
-        </>
-    )
+        <ErrorBoundary fallbackRender={fallbackRender} onError={onError}>
+            <Suspense fallback={<div>Loading...</div>}>
+                <div
+                    className="spinner"
+                    style={{ display: operationPending ? "block" : "none" }}
+                    aria-busy={operationPending}></div>
+                <section className="todoapp">
+                    <Header />
+                    <Main />
+                    <Footer />
+                </section>
+                <footer className="info">
+                    <p>Double-click to edit a todo</p>
+                    <p>
+                        Template by <a href="http://sindresorhus.com">Sindre Sorhus</a>
+                    </p>
+                    <p>
+                        Created by
+                        <a target="_blank" href="https://waynemaurer.net" rel="noreferrer">
+                            Wayne Maurer
+                        </a>
+                    </p>
+                </footer>
+            </Suspense>
+        </ErrorBoundary>
+    );
 }

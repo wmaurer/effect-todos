@@ -1,16 +1,16 @@
-import { useRxSetPromise, useRxValue } from "@effect-rx/rx-react"
-import { Link } from "@tanstack/react-router"
+import { useAtomSet, useAtomSuspense } from "@effect-atom/atom-react";
+import { Link } from "@tanstack/react-router";
 
-import { callTodosServiceFn, incompleteTodosCountRx } from "../rx"
+import { clearCompletedTodosAtom, incompleteTodosCountAtom } from "../atom";
 
 export const Footer = () => {
-    const incompleteTodosCount = useRxValue(incompleteTodosCountRx)
-    const callTodoServiceFn = useRxSetPromise(callTodosServiceFn)
+    const incompleteTodosCount = useAtomSuspense(incompleteTodosCountAtom);
+    const clearCompletedTodos = useAtomSet(clearCompletedTodosAtom);
 
     return (
         <footer className="footer">
             <span className="todo-count">
-                <strong>{incompleteTodosCount}</strong> item{incompleteTodosCount !== 1 ? "s" : ""} left
+                <strong>{incompleteTodosCount.value}</strong> item{incompleteTodosCount.value !== 1 ? "s" : ""} left
             </span>
             <ul className="filters">
                 <li>
@@ -29,9 +29,9 @@ export const Footer = () => {
                     </Link>
                 </li>
             </ul>
-            <button className="clear-completed" onClick={() => callTodoServiceFn((_) => _.clearCompletedTodos())}>
+            <button className="clear-completed" onClick={() => clearCompletedTodos()}>
                 Clear completed
             </button>
         </footer>
-    )
-}
+    );
+};
