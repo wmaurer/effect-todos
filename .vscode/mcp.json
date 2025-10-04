@@ -1,14 +1,13 @@
 {
-    "servers": {
-        "nx-mcp": {
-            "type": "http",
-            "url": "http://localhost:9500/mcp"
-        },
-        "effect-mcp": {
-            "type": "stdio",
-            "command": "npx",
-            "args": ["-y", "effect-mcp"],
-            "env": {}
-        }
+  "servers": {
+    "effect-mcp": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "effect-mcp"
+      ],
+      "env": {}
     }
+  }
 }

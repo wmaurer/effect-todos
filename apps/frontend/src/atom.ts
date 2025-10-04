@@ -4,6 +4,7 @@ import { Array, Data, Effect, Either, Match, Option } from "effect";
 import { NoSuchElementException } from "effect/Cause";
 
 import { upsertBy } from "./array";
+import { atomListBuilder } from "./atom-builder";
 import { TodosFilter } from "./Todo";
 
 import { Api, Todo, TodoId } from "@/domain";
