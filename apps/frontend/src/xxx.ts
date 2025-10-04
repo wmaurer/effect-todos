@@ -44,10 +44,11 @@ export interface DeclareGetListStep<
     D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]],
 > {
     declareGetList<A_, E_>(
-        fn: (
-            ...args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }
-        ) => // args: D[0] extends Effect.Effect<infer A, any, any> ? A : never,
-        Effect.Effect<A_, E_, R>,
+        fn: (args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }) => Effect.Effect<
+            A_,
+            E_,
+            R
+        >,
     ): FinalStep<R, A_, E_>;
 }
 
@@ -69,9 +70,11 @@ export class AtomListBuilder2<R, D extends readonly [Effect.Effect<any, any, R>,
     }
 
     declareGetList<A_, E_>(
-        fn: (
-            ...args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }
-        ) => Effect.Effect<A_, E_, R>,
+        fn: (args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }) => Effect.Effect<
+            A_,
+            E_,
+            R
+        >,
     ): FinalStep<R, A_, E_> {
         // In a real implementation, you would run the dependencies and pass their results to fn
         // Here, just store the effect returned by fn for type safety
@@ -96,5 +99,5 @@ const runtime = Atom.runtime(Layer.merge(ApiClient.layer, BrowserHttpClient.laye
 const fo = HttpApiClient.make(Api);
 const b = AtomListBuilder.builder()
     .setRuntime(runtime)
-    .withDependencies([HttpClient.HttpClient, ApiClient] as const)
-    .declareGetList((a, b) => b.todos.createTodo({ payload: "a" }));
+    .withDependencies([HttpClient.HttpClient, ApiClient])
+    .declareGetList(([, apiClient]) => apiClient.todos.createTodo({ payload: "a" }));
