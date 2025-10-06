@@ -1,53 +1,64 @@
+/* eslint-disable @typescript-eslint/no-non-null-assertion */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
-import { HttpApiClient, HttpClient } from "@effect/platform";
+import { HttpClient } from "@effect/platform";
 import { BrowserHttpClient } from "@effect/platform-browser";
 import { Atom } from "@effect-atom/atom-react";
-import { Effect, Layer } from "effect";
+import { Array, Effect, Layer } from "effect";
 
 import { ApiClient } from "./atom";
 
-import { Api } from "@/domain";
+import { Todo } from "@/domain";
 
 export interface SetRuntimeStep {
-    setRuntime<R>(runtime: Atom.AtomRuntime<R>): SetWithDependenciesStep<R>;
+    setRuntime<R>(runtime: Atom.AtomRuntime<R>): SetWithDependenciesStep<R> & DeclareGetListStep<R>;
 }
 
 export interface SetWithDependenciesStep<R> {
     withDependencies<D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
         effects: D,
-    ): DeclareGetListStep<R, D>;
+    ): DeclareGetListWithDependenciesStep<R, D>;
 }
 
-export class AtomListBuilder<R> implements SetRuntimeStep, SetWithDependenciesStep<R> {
-    private constructor(private runtime?: Atom.AtomRuntime<R>) {
+export interface DeclareGetListStep<R> {
+    declareGetList<A2, E2>(effect: Effect.Effect<ReadonlyArray<A2>, E2, R>): SetWithDependenciesStep<R>;
+}
+
+export class ListAtomBuilder<R, A, E> implements SetRuntimeStep, DeclareGetListStep<R>, SetWithDependenciesStep<R> {
+    private constructor(private runtime?: Atom.AtomRuntime<R>, private effect?: Effect.Effect<ReadonlyArray<A>, E, R>) {
         this.runtime = runtime;
     }
 
-    static builder(): SetRuntimeStep {
-        return new AtomListBuilder();
+    static builder(): SetRuntimeStep & DeclareGetListStep<void> {
+        return new ListAtomBuilder();
     }
 
-    setRuntime<R_>(runtime: Atom.AtomRuntime<R_>): SetWithDependenciesStep<R_> {
-        return new AtomListBuilder<R_>(runtime);
+    setRuntime<R2>(runtime: Atom.AtomRuntime<R2>): SetWithDependenciesStep<R2> & DeclareGetListStep<R2> {
+        return new ListAtomBuilder<R2, unknown, unknown>(runtime);
     }
 
-    withDependencies<D_ extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
-        dependencies: D_,
-    ): DeclareGetListStep<R, D_> {
-        return new AtomListBuilder2<R, D_, unknown, unknown>(this.runtime, dependencies, undefined);
+    declareGetList<A2, E2>(
+        effect: Effect.Effect<ReadonlyArray<A2>, E2, R>,
+    ): SetWithDependenciesStep<R> & DeclareGetListStep<R> {
+        return new ListAtomBuilder<R, A2, E2>(this.runtime, effect);
+    }
+
+    withDependencies<D2 extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
+        dependencies: D2,
+    ): DeclareGetListWithDependenciesStep<R, D2> {
+        return new ListAtomBuilder2<R, D2, unknown, unknown>(this.runtime, dependencies, undefined);
     }
 }
 
-export interface DeclareGetListStep<
+export interface DeclareGetListWithDependenciesStep<
     R,
     D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]],
 > {
-    declareGetList<A_, E_>(
+    declareGetList<A2, E2>(
         fn: (args: {
             [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
-        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
-    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_>;
+        }) => Effect.Effect<ReadonlyArray<A2>, E2, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A2, E2>;
 }
 
 export interface WithDependenciesSetWithDependenciesStep<R> {
@@ -60,20 +71,20 @@ export interface DeclareListOperationStep<
     R,
     D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]],
 > {
-    declareListOperation<A_, E_>(
+    declareListOperation<A2, E2>(
         fn: (args: {
             [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
-        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
-    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_>;
+        }) => Effect.Effect<ReadonlyArray<A2>, E2, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A2, E2>;
 }
 
 export interface FinalStep<R, A, E> {
     build(): { runtime: Atom.AtomRuntime<R>; effect: Effect.Effect<A, E, R> };
 }
 
-export class AtomListBuilder2<R, D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]], A, E>
+export class ListAtomBuilder2<R, D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]], A, E>
     implements
-        DeclareGetListStep<R, D>,
+        DeclareGetListWithDependenciesStep<R, D>,
         WithDependenciesSetWithDependenciesStep<R>,
         DeclareListOperationStep<R, D>,
         FinalStep<R, A, E>
@@ -88,47 +99,42 @@ export class AtomListBuilder2<R, D extends readonly [Effect.Effect<any, any, R>,
         this.dependencies = dependencies;
     }
 
-    declareGetList<A_, E_>(
+    declareGetList<A2, E2>(
         fn: (args: {
             [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
-        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
-    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_> {
+        }) => Effect.Effect<ReadonlyArray<A2>, E2, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A2, E2> {
         const effect = null as any;
-        return new AtomListBuilder2<R, D, A_, E_>(this.runtime, this.dependencies, effect);
+        return new ListAtomBuilder2<R, D, A2, E2>(this.runtime, this.dependencies, effect);
     }
 
-    withDependencies<D_ extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
-        dependencies: D_,
-    ): DeclareListOperationStep<R, D_> {
-        return new AtomListBuilder2<R, D_, unknown, unknown>(this.runtime, dependencies, undefined);
+    withDependencies<D2 extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
+        dependencies: D2,
+    ): DeclareListOperationStep<R, D2> {
+        return new ListAtomBuilder2<R, D2, unknown, unknown>(this.runtime, dependencies, undefined);
     }
 
-    declareListOperation<A_, E_>(
+    declareListOperation<A2, E2>(
         fn: (args: {
             [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
-        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
-    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_> {
+        }) => Effect.Effect<ReadonlyArray<A2>, E2, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A2, E2> {
         const effect = null as any;
-        return new AtomListBuilder2<R, D, A_, E_>(this.runtime, this.dependencies, effect);
+        return new ListAtomBuilder2<R, D, A2, E2>(this.runtime, this.dependencies, effect);
     }
 
     build() {
-        return {
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            runtime: this.runtime!,
-            // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-            effect: this.effect!,
-        };
+        return { runtime: this.runtime!, effect: this.effect! };
     }
 }
-const xxx = Effect.gen(function* () {
-    const api = yield* HttpClient.HttpClient;
-    return yield* Effect.succeed([]);
-});
-const runtime = Atom.runtime(Layer.merge(ApiClient.layer, BrowserHttpClient.layerXMLHttpRequest));
-const fo = HttpApiClient.make(Api);
-const b = AtomListBuilder.builder()
-    .setRuntime(runtime)
+
+const result1 = ListAtomBuilder.builder()
+    .declareGetList(Effect.succeed(Array.empty<Todo>()))
+    .withDependencies([HttpClient.HttpClient, ApiClient]);
+
+const runtime2 = Atom.runtime(Layer.merge(ApiClient.layer, BrowserHttpClient.layerXMLHttpRequest));
+const result2 = ListAtomBuilder.builder()
+    .setRuntime(runtime2)
     .withDependencies([HttpClient.HttpClient, ApiClient])
     .declareGetList(([, apiClient]) => apiClient.todos.getAllTodos())
     .withDependencies([ApiClient])
@@ -136,3 +142,5 @@ const b = AtomListBuilder.builder()
     .withDependencies([HttpClient.HttpClient, ApiClient])
     .declareListOperation(([, apiClient]) => apiClient.todos.getAllTodos())
     .build();
+
+// TODO: type level checks especially with E and R
