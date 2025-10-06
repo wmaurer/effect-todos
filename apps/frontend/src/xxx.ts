@@ -19,7 +19,7 @@ export interface SetWithDependenciesStep<R> {
     ): DeclareGetListStep<R, D>;
 }
 
-export class AtomListBuilder<R> implements SetRuntimeStep {
+export class AtomListBuilder<R> implements SetRuntimeStep, SetWithDependenciesStep<R> {
     private constructor(private runtime?: Atom.AtomRuntime<R>) {
         this.runtime = runtime;
     }
@@ -44,12 +44,27 @@ export interface DeclareGetListStep<
     D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]],
 > {
     declareGetList<A_, E_>(
-        fn: (args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }) => Effect.Effect<
-            A_,
-            E_,
-            R
-        >,
-    ): FinalStep<R, A_, E_>;
+        fn: (args: {
+            [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
+        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_>;
+}
+
+export interface WithDependenciesSetWithDependenciesStep<R> {
+    withDependencies<D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
+        effects: D,
+    ): DeclareListOperationStep<R, D>;
+}
+
+export interface DeclareListOperationStep<
+    R,
+    D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]],
+> {
+    declareListOperation<A_, E_>(
+        fn: (args: {
+            [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
+        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_>;
 }
 
 export interface FinalStep<R, A, E> {
@@ -57,7 +72,11 @@ export interface FinalStep<R, A, E> {
 }
 
 export class AtomListBuilder2<R, D extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]], A, E>
-    implements DeclareGetListStep<R, D>, FinalStep<R, A, E>
+    implements
+        DeclareGetListStep<R, D>,
+        WithDependenciesSetWithDependenciesStep<R>,
+        DeclareListOperationStep<R, D>,
+        FinalStep<R, A, E>
 {
     private dependencies?: readonly Effect.Effect<any, any, R>[];
     constructor(
@@ -70,14 +89,25 @@ export class AtomListBuilder2<R, D extends readonly [Effect.Effect<any, any, R>,
     }
 
     declareGetList<A_, E_>(
-        fn: (args: { [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never }) => Effect.Effect<
-            A_,
-            E_,
-            R
-        >,
-    ): FinalStep<R, A_, E_> {
-        // In a real implementation, you would run the dependencies and pass their results to fn
-        // Here, just store the effect returned by fn for type safety
+        fn: (args: {
+            [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
+        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_> {
+        const effect = null as any;
+        return new AtomListBuilder2<R, D, A_, E_>(this.runtime, this.dependencies, effect);
+    }
+
+    withDependencies<D_ extends readonly [Effect.Effect<any, any, R>, ...Effect.Effect<any, any, R>[]]>(
+        dependencies: D_,
+    ): DeclareListOperationStep<R, D_> {
+        return new AtomListBuilder2<R, D_, unknown, unknown>(this.runtime, dependencies, undefined);
+    }
+
+    declareListOperation<A_, E_>(
+        fn: (args: {
+            [K in keyof D]: D[K] extends Effect.Effect<infer A, any, any> ? A : never;
+        }) => Effect.Effect<ReadonlyArray<A_>, E_, R>,
+    ): WithDependenciesSetWithDependenciesStep<R> & DeclareListOperationStep<R, D> & FinalStep<R, A_, E_> {
         const effect = null as any;
         return new AtomListBuilder2<R, D, A_, E_>(this.runtime, this.dependencies, effect);
     }
@@ -100,4 +130,9 @@ const fo = HttpApiClient.make(Api);
 const b = AtomListBuilder.builder()
     .setRuntime(runtime)
     .withDependencies([HttpClient.HttpClient, ApiClient])
-    .declareGetList(([, apiClient]) => apiClient.todos.createTodo({ payload: "a" }));
+    .declareGetList(([, apiClient]) => apiClient.todos.getAllTodos())
+    .withDependencies([ApiClient])
+    .declareListOperation(([apiClient]) => apiClient.todos.getAllTodos())
+    .withDependencies([HttpClient.HttpClient, ApiClient])
+    .declareListOperation(([, apiClient]) => apiClient.todos.getAllTodos())
+    .build();
